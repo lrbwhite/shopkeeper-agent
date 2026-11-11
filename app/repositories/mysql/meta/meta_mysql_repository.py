@@ -8,7 +8,10 @@ Repository 自身只关心“如何写入”，而“哪些写操作要放在同
 问数链路运行时也会从这里读取元数据，用来把召回到的 id 补齐成完整实体
 """
 
-from sqlalchemy import select
+from dataclasses import asdict
+
+from sqlalchemy import delete, or_, select
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.entities.column_info import ColumnInfo
@@ -16,10 +19,10 @@ from app.entities.column_metric import ColumnMetric
 from app.entities.metric_info import MetricInfo
 from app.entities.table_info import TableInfo
 from app.models.column_info import ColumnInfoMySQL
+from app.models.column_metric import ColumnMetricMySQL
+from app.models.metric_info import MetricInfoMySQL
 from app.models.table_info import TableInfoMySQL
 from app.repositories.mysql.meta.mappers.column_info_mapper import ColumnInfoMapper
-from app.repositories.mysql.meta.mappers.column_metric_mapper import ColumnMetricMapper
-from app.repositories.mysql.meta.mappers.metric_info_mapper import MetricInfoMapper
 from app.repositories.mysql.meta.mappers.table_info_mapper import TableInfoMapper
 
 
@@ -29,32 +32,105 @@ class MetaMySQLRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    def save_table_infos(self, table_infos: list[TableInfo]):
-        """批量保存表元数据。输入仍然是业务实体，而不是 ORM 模型"""
-        self.session.add_all(
-            [TableInfoMapper.to_model(table_info) for table_info in table_infos]
-        )
+    async def save_table_infos(self, table_infos: list[TableInfo]):
+        """批量写入表元数据：重复构建时按主键覆盖，保证幂等"""
+        if not table_infos:
+            return
 
-    def save_column_infos(self, column_infos: list[ColumnInfo]):
-        """批量保存字段元数据。实体到模型的转换统一通过 Mapper 完成"""
-        self.session.add_all(
-            [ColumnInfoMapper.to_model(column_info) for column_info in column_infos]
+        stmt = mysql_insert(TableInfoMySQL).values(
+            [asdict(table_info) for table_info in table_infos]
         )
+        stmt = stmt.on_duplicate_key_update(
+            name=stmt.inserted.name,
+            role=stmt.inserted.role,
+            description=stmt.inserted.description,
+        )
+        await self.session.execute(stmt)
 
-    def save_metric_infos(self, metric_infos: list[MetricInfo]):
-        """批量保存指标元数据。指标本身和字段关联关系分开写入"""
-        self.session.add_all(
-            [MetricInfoMapper.to_model(metric_info) for metric_info in metric_infos]
-        )
+    async def save_column_infos(self, column_infos: list[ColumnInfo]):
+        """批量写入字段元数据：重复构建时按主键覆盖，保证幂等"""
+        if not column_infos:
+            return
 
-    def save_column_metrics(self, column_metrics: list[ColumnMetric]):
-        """批量保存字段与指标的关联关系"""
-        self.session.add_all(
-            [
-                ColumnMetricMapper.to_model(column_metric)
-                for column_metric in column_metrics
-            ]
+        stmt = mysql_insert(ColumnInfoMySQL).values(
+            [asdict(column_info) for column_info in column_infos]
         )
+        stmt = stmt.on_duplicate_key_update(
+            name=stmt.inserted.name,
+            type=stmt.inserted.type,
+            role=stmt.inserted.role,
+            examples=stmt.inserted.examples,
+            description=stmt.inserted.description,
+            alias=stmt.inserted.alias,
+            table_id=stmt.inserted.table_id,
+        )
+        await self.session.execute(stmt)
+
+    async def save_metric_infos(self, metric_infos: list[MetricInfo]):
+        """批量写入指标元数据：重复构建时按主键覆盖，保证幂等"""
+        if not metric_infos:
+            return
+
+        stmt = mysql_insert(MetricInfoMySQL).values(
+            [asdict(metric_info) for metric_info in metric_infos]
+        )
+        stmt = stmt.on_duplicate_key_update(
+            name=stmt.inserted.name,
+            description=stmt.inserted.description,
+            relevant_columns=stmt.inserted.relevant_columns,
+            alias=stmt.inserted.alias,
+        )
+        await self.session.execute(stmt)
+
+    async def save_column_metrics(self, column_metrics: list[ColumnMetric]):
+        """批量写入字段与指标的关联关系，重复关系直接跳过"""
+        if not column_metrics:
+            return
+
+        stmt = mysql_insert(ColumnMetricMySQL).values(
+            [asdict(column_metric) for column_metric in column_metrics]
+        )
+        # 联合主键已经存在时不需要更新任何列，这里用无实际变更的赋值避免报错
+        stmt = stmt.on_duplicate_key_update(column_id=stmt.inserted.column_id)
+        await self.session.execute(stmt)
+
+    async def delete_table_infos_not_in(self, table_ids: list[str]) -> int:
+        """删除不在本次构建结果里的表元数据，返回删除行数"""
+        result = await self.session.execute(
+            delete(TableInfoMySQL).where(TableInfoMySQL.id.not_in(table_ids))
+        )
+        return result.rowcount or 0
+
+    async def delete_column_infos_not_in(self, column_ids: list[str]) -> int:
+        """删除不在本次构建结果里的字段元数据，返回删除行数"""
+        result = await self.session.execute(
+            delete(ColumnInfoMySQL).where(ColumnInfoMySQL.id.not_in(column_ids))
+        )
+        return result.rowcount or 0
+
+    async def delete_metric_infos_not_in(self, metric_ids: list[str]) -> int:
+        """删除不在本次构建结果里的指标元数据，返回删除行数"""
+        result = await self.session.execute(
+            delete(MetricInfoMySQL).where(MetricInfoMySQL.id.not_in(metric_ids))
+        )
+        return result.rowcount or 0
+
+    async def delete_column_metrics_not_in(
+        self, column_ids: list[str], metric_ids: list[str]
+    ) -> int:
+        """删除引用已移除字段或指标的关联关系，返回删除行数"""
+        conditions = []
+        if column_ids:
+            conditions.append(ColumnMetricMySQL.column_id.not_in(column_ids))
+        if metric_ids:
+            conditions.append(ColumnMetricMySQL.metric_id.not_in(metric_ids))
+        if not conditions:
+            return 0
+
+        result = await self.session.execute(
+            delete(ColumnMetricMySQL).where(or_(*conditions))
+        )
+        return result.rowcount or 0
 
     async def get_column_info_by_id(self, id: str) -> ColumnInfo | None:
         """按字段 id 查询字段元数据，供召回信息合并阶段补齐字段上下文"""

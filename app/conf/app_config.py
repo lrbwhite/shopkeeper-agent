@@ -55,17 +55,17 @@ class DBConfig:
 class QdrantConfig:
     """Qdrant 连接与向量维度配置"""
 
-    host: str
-    port: int
+    url: str
+    api_key: str
     embedding_size: int
 
 
 @dataclass
 class EmbeddingConfig:
-    """Embedding 服务配置"""
+    """Embedding 服务配置（OpenAI 兼容协议的云端服务）"""
 
-    host: str
-    port: int
+    api_key: str
+    base_url: str
     model: str
 
 

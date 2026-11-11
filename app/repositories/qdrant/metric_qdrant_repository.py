@@ -8,7 +8,7 @@
 """
 
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import Distance, PointIdsList, PointStruct, VectorParams
 
 from app.conf.app_config import app_config
 from app.entities.metric_info import MetricInfo
@@ -33,6 +33,30 @@ class MetricQdrantRepository:
                     distance=Distance.COSINE,
                 ),
             )
+
+    async def reconcile(self, keep_ids: set[str]) -> int:
+        """删除不属于本次构建结果的向量点，返回值被删除的点数"""
+        existing_ids: list[str] = []
+        offset = None
+        while True:
+            points, offset = await self.client.scroll(
+                collection_name=self.collection_name,
+                limit=100,
+                offset=offset,
+                with_payload=False,
+                with_vectors=False,
+            )
+            existing_ids.extend(str(point.id) for point in points)
+            if offset is None:
+                break
+
+        stale_ids = [point_id for point_id in existing_ids if point_id not in keep_ids]
+        if stale_ids:
+            await self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=PointIdsList(points=stale_ids),
+            )
+        return len(stale_ids)
 
     async def upsert(
         self,

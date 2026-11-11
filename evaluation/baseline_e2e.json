@@ -1,0 +1,1109 @@
+{
+  "meta": {
+    "generated_at": "2026-11-11T17:29:36",
+    "git_commit": "0ab1410",
+    "dataset": "evaluation\\questions.jsonl",
+    "mode": "e2e",
+    "limit": 0
+  },
+  "summary": {
+    "questions": 20,
+    "recall": {
+      "column_coverage": null,
+      "column_hit": null,
+      "column_candidates": null,
+      "column_errors": 0,
+      "metric_coverage": null,
+      "metric_hit": null,
+      "metric_candidates": null,
+      "metric_errors": 0,
+      "value_coverage": null,
+      "value_hit": null,
+      "value_candidates": null,
+      "value_errors": 0
+    },
+    "e2e": {
+      "success_rate": 0.5,
+      "p50_latency_ms": 56454.7,
+      "p95_latency_ms": 116830.9,
+      "avg_llm_calls": 4.5,
+      "avg_total_tokens": 5354,
+      "avg_sql_keyword_coverage": 0.45,
+      "avg_table_hit_coverage": 0.475,
+      "failed_ids": [
+        "q008",
+        "q009",
+        "q010",
+        "q012",
+        "q014",
+        "q016",
+        "q017",
+        "q018",
+        "q019",
+        "q020"
+      ]
+    }
+  },
+  "questions": [
+    {
+      "id": "q001",
+      "query": "订单总金额是多少",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 47055.2,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 7163,
+        "sql": "SELECT SUM(order_amount) AS 订单总金额 FROM fact_order;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 472.7,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 10167.2,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 12879.8,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 38301.6,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 15.4,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 3124.8,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 4013.5,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 9.2,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 4218.3,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 2.5,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 1.1,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q002",
+      "query": "一共卖出了多少件商品",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 80388.3,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 8955,
+        "sql": "SELECT SUM(order_quantity) AS 总件数 FROM fact_order;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 7.2,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 65190.4,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 17743.9,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 16301.3,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 12.5,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 2991.2,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 5676.0,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 3.1,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 9469.8,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 8.7,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 2.3,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q003",
+      "query": "订单总数有多少",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 46669.8,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 7159,
+        "sql": "SELECT COUNT(order_id) AS `订单总数` FROM fact_order;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.5,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 10958.6,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 13561.9,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 32989.4,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 4.5,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 3804.1,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 6464.8,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 1.8,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 7189.4,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 1.7,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 4.2,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q004",
+      "query": "各会员等级的客户数量",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 66547.4,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 8722,
+        "sql": "SELECT member_level AS 会员等级, COUNT(customer_id) AS 客户数量 FROM dim_customer GROUP BY member_level;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 7.4,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 19605.6,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 22379.7,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 55606.1,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 4.7,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 2127.4,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 5210.2,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 1.9,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 5690.7,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 2.7,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 8.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q005",
+      "query": "统计华北地区的销售额",
+      "type": "multi_table",
+      "e2e": {
+        "latency_ms": 23778.3,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 6156,
+        "sql": "SELECT SUM(f.order_amount) AS 销售额 FROM fact_order f JOIN dim_region r ON f.region_id = r.region_id WHERE r.region_name = '华北';",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.5,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 9866.9,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 11944.8,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 9667.0,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 4.4,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 4027.6,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 3794.9,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 2.0,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 7777.0,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 2.2,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 1.2,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q006",
+      "query": "华东地区卖出了多少件商品",
+      "type": "multi_table",
+      "e2e": {
+        "latency_ms": 44494.6,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 7791,
+        "sql": "SELECT SUM(f.order_quantity) AS 件数 FROM fact_order f INNER JOIN dim_region r ON f.region_id = r.region_id WHERE r.region_name = '华东';",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 27202.7,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 13548.8,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 13471.7,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 6.6,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 4007.0,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 8876.8,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 2.1,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 8386.1,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 2.0,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 1.6,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q007",
+      "query": "每个品类的销售额",
+      "type": "multi_table",
+      "e2e": {
+        "latency_ms": 90622.2,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 9448,
+        "sql": "SELECT d.category AS `品类`, SUM(f.order_amount) AS `销售额`\nFROM fact_order f\nINNER JOIN dim_product d ON f.product_id = d.product_id\nGROUP BY d.category;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.5,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 7587.0,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 18654.9,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 34363.5,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 5.6,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 5280.3,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 7836.5,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 1.7,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 48394.3,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 2.9,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 3.5,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q008",
+      "query": "各省份的订单数量",
+      "type": "multi_table",
+      "e2e": {
+        "latency_ms": 113171.5,
+        "success": false,
+        "error": "ResponseHandlingException: ",
+        "llm_calls": 3,
+        "total_tokens": 8717,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.5,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q009",
+      "query": "GMV 是多少",
+      "type": "metric",
+      "e2e": {
+        "latency_ms": 66138.1,
+        "success": false,
+        "error": "ResponseHandlingException: ",
+        "llm_calls": 3,
+        "total_tokens": 3561,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q010",
+      "query": "平均订单金额是多少",
+      "type": "metric",
+      "e2e": {
+        "latency_ms": 41851.5,
+        "success": false,
+        "error": "ResponseHandlingException: ",
+        "llm_calls": 3,
+        "total_tokens": 3015,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q011",
+      "query": "本月成交总额",
+      "type": "metric",
+      "e2e": {
+        "latency_ms": 116830.9,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 6803,
+        "sql": "SELECT SUM(order_amount) AS 成交总额\nFROM fact_order\nWHERE date_id >= 20261101 AND date_id < 20261201;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.5,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 59127.6,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 80312.3,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 16068.8,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 5.2,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 15099.5,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 15890.7,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 2.1,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 20601.0,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 1.7,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 1.3,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.5,
+        "table_hit_coverage": 0.5
+      }
+    },
+    {
+      "id": "q012",
+      "query": "客单价是多少",
+      "type": "metric",
+      "e2e": {
+        "latency_ms": 56454.7,
+        "success": false,
+        "error": "ResponseHandlingException: ",
+        "llm_calls": 3,
+        "total_tokens": 1671,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q013",
+      "query": "华为品牌的销售额是多少",
+      "type": "value_filter",
+      "e2e": {
+        "latency_ms": 77132.1,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 8331,
+        "sql": "SELECT SUM(f.order_amount) AS 销售额\nFROM fact_order f\nJOIN dim_product p ON f.product_id = p.product_id\nWHERE p.brand = '华为';",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 59518.2,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 46932.4,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 22500.4,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 7.8,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 9722.5,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 9035.6,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 2.0,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 7859.7,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 2.2,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 1.5,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q014",
+      "query": "黄金会员贡献了多少销售额",
+      "type": "value_filter",
+      "e2e": {
+        "latency_ms": 36494.2,
+        "success": false,
+        "error": "ResponseHandlingException: ",
+        "llm_calls": 3,
+        "total_tokens": 3769,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.6,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q015",
+      "query": "华东地区的订单数量",
+      "type": "value_filter",
+      "e2e": {
+        "latency_ms": 77740.1,
+        "success": true,
+        "error": null,
+        "llm_calls": 6,
+        "total_tokens": 7700,
+        "sql": "SELECT COUNT(*) AS 订单数量\nFROM fact_order f\nINNER JOIN dim_region r ON f.region_id = r.region_id\nWHERE r.region_name = '华东';",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.6,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 32123.9,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 37778.9,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 20551.7,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 4.7,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 28526.5,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 31325.3,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 1.5,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 8609.5,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 2.4,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 1.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.5,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q016",
+      "query": "女客户的消费金额",
+      "type": "value_filter",
+      "e2e": {
+        "latency_ms": 30471.7,
+        "success": false,
+        "error": "ResponseHandlingException: ",
+        "llm_calls": 3,
+        "total_tokens": 1695,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.6,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q017",
+      "query": "最近三个月的销售额",
+      "type": "relative_time",
+      "e2e": {
+        "latency_ms": 1770.4,
+        "success": false,
+        "error": "APIConnectionError: Connection error.",
+        "llm_calls": 3,
+        "total_tokens": 0,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 91.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q018",
+      "query": "本季度的订单数量",
+      "type": "relative_time",
+      "e2e": {
+        "latency_ms": 1230.8,
+        "success": false,
+        "error": "APIConnectionError: Connection error.",
+        "llm_calls": 3,
+        "total_tokens": 0,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q019",
+      "query": "上个月的 GMV",
+      "type": "relative_time",
+      "e2e": {
+        "latency_ms": 124268.2,
+        "success": false,
+        "error": "ResponseHandlingException: ",
+        "llm_calls": 3,
+        "total_tokens": 5527,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.7,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    },
+    {
+      "id": "q020",
+      "query": "去年同期各品类的销售额",
+      "type": "relative_time",
+      "e2e": {
+        "latency_ms": 43309.1,
+        "success": false,
+        "error": "APIConnectionError: Connection error.",
+        "llm_calls": 3,
+        "total_tokens": 897,
+        "sql": "",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 0.0,
+        "table_hit_coverage": 0.0
+      }
+    }
+  ]
+}

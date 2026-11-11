@@ -24,14 +24,16 @@ db_dw:
   database: dw
 
 qdrant:
-  host: localhost
-  port: 6333
+  # Qdrant Cloud 集群地址，形如 https://xxxx.cloud.qdrant.io:6333
+  url: https://4b38ba86-8114-4238-9239-54ad8df7a3e2.us-west-1-0.aws.cloud.qdrant.io
+  api_key: ${oc.env:QDRANT_API_KEY}
   embedding_size: 1024
 
 embedding:
-  host: localhost
-  port: 8081
-  model: BAAI/bge-large-zh-v1.5
+  # 阿里云百炼的 OpenAI 兼容接口，text-embedding-v4 默认输出 1024 维
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  api_key: ${oc.env:DASHSCOPE_API_KEY}
+  model: qwen3.7-text-embedding-flash
 
 es:
   host: localhost
@@ -39,6 +41,6 @@ es:
   index_name: data_agent
 
 llm:
-  model_name: Pro/zai-org/GLM-5.1
-  api_key: ${oc.env:LLM_API_KEY}
-  base_url: https://api.siliconflow.cn/v1
+  model_name: deepseek-v4-pro-0813
+  api_key: ${oc.env:DASHSCOPE_API_KEY}
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1

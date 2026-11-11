@@ -7,7 +7,8 @@ State 是 LangGraph 各节点之间传递和更新的共享数据
 SQL 生成闭环会继续写入候选 SQL 以及校验错误信息，用于控制校正或执行分支
 """
 
-from typing import TypedDict
+import operator
+from typing import Annotated, TypedDict
 
 from app.entities.column_info import ColumnInfo
 from app.entities.metric_info import MetricInfo
@@ -60,6 +61,15 @@ class DBInfoState(TypedDict):
     version: str
 
 
+class TraceEntry(TypedDict):
+    """单个节点的执行轨迹，用于定位耗时和失败节点"""
+
+    node: str
+    status: str
+    latency_ms: float
+    error: str | None
+
+
 class DataAgentState(TypedDict):
     """一次问数链路中的核心状态"""
 
@@ -77,3 +87,8 @@ class DataAgentState(TypedDict):
     sql: str  # 生成或校正后的SQL
 
     error: str  # 校验SQL时出现的错误信息
+
+    retry_count: int  # SQL 修正次数，用于限制重试上限
+
+    # operator.add 让每个节点返回的轨迹追加到列表，而不是相互覆盖
+    trace: Annotated[list[TraceEntry], operator.add]

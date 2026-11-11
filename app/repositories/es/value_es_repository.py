@@ -42,6 +42,43 @@ class ValueESRepository:
                 index=self.index_name, mappings=self.index_mappings
             )
 
+    async def _list_doc_ids(self) -> list[str]:
+        """滚动读取索引里的全部文档 id"""
+        resp = await self.client.search(
+            index=self.index_name,
+            query={"match_all": {}},
+            size=100,
+            sort=["_doc"],
+            scroll="5m",
+        )
+        scroll_id = resp["_scroll_id"]
+        doc_ids = [hit["_id"] for hit in resp["hits"]["hits"]]
+
+        while resp["hits"]["hits"]:
+            resp = await self.client.scroll(scroll_id=scroll_id, scroll="5m")
+            doc_ids.extend(hit["_id"] for hit in resp["hits"]["hits"])
+
+        await self.client.clear_scroll(scroll_id=scroll_id)
+        return doc_ids
+
+    async def reconcile(self, keep_ids: set[str]) -> int:
+        """删除不属于本次构建结果的文档，返回值被删除的文档数"""
+        if not await self.client.indices.exists(index=self.index_name):
+            return 0
+
+        stale_ids = [doc_id for doc_id in await self._list_doc_ids() if doc_id not in keep_ids]
+        if not stale_ids:
+            return 0
+
+        operations = [
+            {"delete": {"_index": self.index_name, "_id": doc_id}}
+            for doc_id in stale_ids
+        ]
+        for i in range(0, len(operations), 20):
+            await self.client.bulk(operations=operations[i : i + 20])
+        await self.client.indices.refresh(index=self.index_name)
+        return len(stale_ids)
+
     async def index(self, value_infos: list[ValueInfo], batch_size=20):
         """分批写入字段取值，避免一次 bulk 过大"""
         if not value_infos:

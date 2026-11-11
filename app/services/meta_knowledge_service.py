@@ -12,7 +12,7 @@ import uuid
 from dataclasses import asdict
 from pathlib import Path
 
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_core.embeddings import Embeddings
 from omegaconf import OmegaConf
 
 from app.conf.meta_config import MetaConfig
@@ -37,7 +37,7 @@ class MetaKnowledgeService:
         meta_mysql_repository: MetaMySQLRepository,
         dw_mysql_repository: DWMySQLRepository,
         column_qdrant_repository: ColumnQdrantRepository,
-        embedding_client: HuggingFaceEndpointEmbeddings,
+        embedding_client: Embeddings,
         value_es_repository: ValueESRepository,
         metric_qdrant_repository: MetricQdrantRepository,
     ):
@@ -48,15 +48,20 @@ class MetaKnowledgeService:
         # 字段向量集合的创建和写入统一交给 Qdrant Repository
         self.column_qdrant_repository: ColumnQdrantRepository = column_qdrant_repository
         # 向量化动作放在 Service 层
-        self.embedding_client: HuggingFaceEndpointEmbeddings = embedding_client
+        self.embedding_client: Embeddings = embedding_client
         # 字段值全文索引的写入统一交给 ES Repository
         self.value_es_repository: ValueESRepository = value_es_repository
         # 指标向量集合和字段向量集合分开管理，便于后续按对象类型独立召回
         self.metric_qdrant_repository: MetricQdrantRepository = metric_qdrant_repository
 
+    @staticmethod
+    def _stable_point_id(entity_type: str, entity_id: str, view: str) -> str:
+        """按业务 id 和语义视角生成稳定向量点 id，保证重复构建时覆盖而不是追加"""
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, f"{entity_type}:{entity_id}:{view}"))
+
     async def _save_tables_to_meta_db(
         self, meta_config: MetaConfig
-    ) -> list[ColumnInfo]:
+    ) -> tuple[list[TableInfo], list[ColumnInfo]]:
         """把配置里的表字段信息补齐后写入 Meta MySQL"""
         table_infos: list[TableInfo] = []
         column_infos: list[ColumnInfo] = []
@@ -93,13 +98,15 @@ class MetaKnowledgeService:
                 column_infos.append(column_info)
 
         async with self.meta_mysql_repository.session.begin():
-            self.meta_mysql_repository.save_table_infos(table_infos)
-            self.meta_mysql_repository.save_column_infos(column_infos)
+            await self.meta_mysql_repository.save_table_infos(table_infos)
+            await self.meta_mysql_repository.save_column_infos(column_infos)
 
-        return column_infos
+        return table_infos, column_infos
 
-    async def _save_column_info_to_qdrant(self, column_infos: list[ColumnInfo]):
-        """把字段元数据继续推进成可语义检索的 Qdrant 向量点"""
+    async def _save_column_info_to_qdrant(
+        self, column_infos: list[ColumnInfo]
+    ) -> list[str]:
+        """把字段元数据推进成向量点，返回本次写入的 point id 列表"""
         await self.column_qdrant_repository.ensure_collection()
 
         points: list[dict] = []
@@ -107,7 +114,7 @@ class MetaKnowledgeService:
             # 一个字段不会只生成一个向量点，而是把名字 描述 别名都拆开建立语义入口
             points.append(
                 {
-                    "id": uuid.uuid4(),
+                    "id": self._stable_point_id("column", column_info.id, "name"),
                     "embedding_text": column_info.name,
                     "payload": asdict(column_info),
                 }
@@ -115,7 +122,9 @@ class MetaKnowledgeService:
 
             points.append(
                 {
-                    "id": uuid.uuid4(),
+                    "id": self._stable_point_id(
+                        "column", column_info.id, "description"
+                    ),
                     "embedding_text": column_info.description,
                     "payload": asdict(column_info),
                 }
@@ -124,7 +133,9 @@ class MetaKnowledgeService:
             for alia in column_info.alias:
                 points.append(
                     {
-                        "id": uuid.uuid4(),
+                        "id": self._stable_point_id(
+                            "column", column_info.id, f"alias:{alia}"
+                        ),
                         "embedding_text": alia,
                         "payload": asdict(column_info),
                     }
@@ -146,11 +157,12 @@ class MetaKnowledgeService:
         payloads = [point["payload"] for point in points]
 
         await self.column_qdrant_repository.upsert(ids, embeddings, payloads)
+        return ids
 
     async def _save_value_info_to_es(
         self, meta_config: MetaConfig, column_infos: list[ColumnInfo]
-    ):
-        """把允许同步的字段真实取值写入 Elasticsearch 全文索引"""
+    ) -> list[str]:
+        """把允许同步的字段真实取值写入全文索引，返回本次写入的文档 id 列表"""
         await self.value_es_repository.ensure_index()
 
         # 不是所有字段都要同步真实值，是否同步由配置里的 sync 显式控制
@@ -180,6 +192,7 @@ class MetaKnowledgeService:
                 value_infos.extend(current_values_infos)
 
         await self.value_es_repository.index(value_infos)
+        return [value_info.id for value_info in value_infos]
 
     async def _save_metrics_to_meta_db(
         self, meta_config: MetaConfig
@@ -205,8 +218,8 @@ class MetaKnowledgeService:
 
         # 指标本身和字段关系要放在同一笔事务里，避免只写入其中一部分
         async with self.meta_mysql_repository.session.begin():
-            self.meta_mysql_repository.save_metric_infos(metric_infos)
-            self.meta_mysql_repository.save_column_metrics(column_metrics)
+            await self.meta_mysql_repository.save_metric_infos(metric_infos)
+            await self.meta_mysql_repository.save_column_metrics(column_metrics)
 
         return metric_infos
 
@@ -219,7 +232,7 @@ class MetaKnowledgeService:
             # 和字段一样，一个指标也会拆成名字 描述 别名这几类语义入口
             points.append(
                 {
-                    "id": uuid.uuid4(),
+                    "id": self._stable_point_id("metric", metric_info.id, "name"),
                     "embedding_text": metric_info.name,
                     "payload": asdict(metric_info),
                 }
@@ -227,7 +240,7 @@ class MetaKnowledgeService:
 
             points.append(
                 {
-                    "id": uuid.uuid4(),
+                    "id": self._stable_point_id("metric", metric_info.id, "description"),
                     "embedding_text": metric_info.description,
                     "payload": asdict(metric_info),
                 }
@@ -236,7 +249,9 @@ class MetaKnowledgeService:
             for alia in metric_info.alias:
                 points.append(
                     {
-                        "id": uuid.uuid4(),
+                        "id": self._stable_point_id(
+                            "metric", metric_info.id, f"alias:{alia}"
+                        ),
                         "embedding_text": alia,
                         "payload": asdict(metric_info),
                     }
@@ -258,6 +273,65 @@ class MetaKnowledgeService:
         payloads = [point["payload"] for point in points]
 
         await self.metric_qdrant_repository.upsert(ids, embeddings, payloads)
+        return ids
+
+    async def _reconcile_indexes(
+        self,
+        meta_config: MetaConfig,
+        table_infos: list[TableInfo],
+        column_infos: list[ColumnInfo],
+        column_point_ids: list[str],
+        value_doc_ids: list[str],
+        metric_infos: list[MetricInfo],
+        metric_point_ids: list[str],
+    ) -> dict[str, int]:
+        """删除不属于本次构建结果的旧数据，保证四处存储和当前配置严格一致"""
+        deleted: dict[str, int] = {}
+
+        # MySQL 侧：只对账本次配置声明过的部分，避免误删没参与构建的数据
+        async with self.meta_mysql_repository.session.begin():
+            if meta_config.tables:
+                deleted["table_rows"] = (
+                    await self.meta_mysql_repository.delete_table_infos_not_in(
+                        [table_info.id for table_info in table_infos]
+                    )
+                )
+                deleted["column_rows"] = (
+                    await self.meta_mysql_repository.delete_column_infos_not_in(
+                        [column_info.id for column_info in column_infos]
+                    )
+                )
+            if meta_config.metrics:
+                deleted["metric_rows"] = (
+                    await self.meta_mysql_repository.delete_metric_infos_not_in(
+                        [metric_info.id for metric_info in metric_infos]
+                    )
+                )
+                # 关联关系同时受字段集合和指标集合约束，两边任一失效都要清掉
+                column_ids = (
+                    [column_info.id for column_info in column_infos]
+                    if meta_config.tables
+                    else []
+                )
+                deleted["column_metric_rows"] = (
+                    await self.meta_mysql_repository.delete_column_metrics_not_in(
+                        column_ids=column_ids,
+                        metric_ids=[metric_info.id for metric_info in metric_infos],
+                    )
+                )
+
+        if meta_config.tables:
+            deleted["column_points"] = await self.column_qdrant_repository.reconcile(
+                set(column_point_ids)
+            )
+            deleted["value_docs"] = await self.value_es_repository.reconcile(
+                set(value_doc_ids)
+            )
+        if meta_config.metrics:
+            deleted["metric_points"] = await self.metric_qdrant_repository.reconcile(
+                set(metric_point_ids)
+            )
+        return deleted
 
     async def build(self, config_path: Path):
         """读取配置并依次构建 Meta MySQL Qdrant 和 ES 中的元数据索引"""
@@ -265,16 +339,24 @@ class MetaKnowledgeService:
         schema = OmegaConf.structured(MetaConfig)
         meta_config: MetaConfig = OmegaConf.to_object(OmegaConf.merge(schema, context))
 
+        # 先按幂等方式写入，构建结束后再统一对账删除旧数据
+        table_infos: list[TableInfo] = []
+        column_infos: list[ColumnInfo] = []
+        column_point_ids: list[str] = []
+        value_doc_ids: list[str] = []
+        metric_infos: list[MetricInfo] = []
+        metric_point_ids: list[str] = []
+
         # 根据配置文件判断后续要进入哪条构建链路
         if meta_config.tables:
             # 将表信息和字段信息保存到 Meta MySQL
-            column_infos = await self._save_tables_to_meta_db(meta_config)
+            table_infos, column_infos = await self._save_tables_to_meta_db(meta_config)
             logger.info("保存表信息和字段信息到 Meta MySQL")
             # 对字段信息建立向量索引
-            await self._save_column_info_to_qdrant(column_infos)
+            column_point_ids = await self._save_column_info_to_qdrant(column_infos)
             logger.info("为字段信息建立向量索引")
             # 对指定的维度字段取值建立全文索引
-            await self._save_value_info_to_es(meta_config, column_infos)
+            value_doc_ids = await self._save_value_info_to_es(meta_config, column_infos)
             logger.info("为字段取值建立全文索引")
 
         # 根据配置文件同步指定的指标信息
@@ -284,5 +366,17 @@ class MetaKnowledgeService:
             logger.info("保存指标信息到数据库成功")
 
             # 对指标信息建立向量索引
-            await self._save_metrics_to_qdrant(metric_infos)
+            metric_point_ids = await self._save_metrics_to_qdrant(metric_infos)
             logger.info("为指标信息建立向量索引成功")
+
+        # 对账：删除本次配置里已经不存在、但仍残留在存储里的旧数据
+        deleted = await self._reconcile_indexes(
+            meta_config,
+            table_infos,
+            column_infos,
+            column_point_ids,
+            value_doc_ids,
+            metric_infos,
+            metric_point_ids,
+        )
+        logger.info("元数据索引对账完成，清理旧数据 {}", deleted)

@@ -8,7 +8,7 @@
 
 import json
 
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_core.embeddings import Embeddings
 
 from app.agent.context import DataAgentContext
 from app.agent.graph import graph
@@ -26,7 +26,7 @@ class QueryService:
     def __init__(
         self,
         meta_mysql_repository: MetaMySQLRepository,
-        embedding_client: HuggingFaceEndpointEmbeddings,
+        embedding_client: Embeddings,
         dw_mysql_repository: DWMySQLRepository,
         column_qdrant_repository: ColumnQdrantRepository,
         metric_qdrant_repository: MetricQdrantRepository,
@@ -46,7 +46,8 @@ class QueryService:
         """执行一次问数工作流，并逐段产出 SSE 消息"""
 
         # State 只放会被图节点读写和合并的业务数据，外部工具对象不塞进 State
-        state = DataAgentState(query=query)
+        # retry_count 和 trace 必须有初始值：节点会直接读取，缺失会抛 KeyError
+        state = DataAgentState(query=query, retry_count=0, trace=[])
         # Context 保存本次图执行需要复用的外部依赖，节点通过 runtime.context 读取
         context = DataAgentContext(
             column_qdrant_repository=self.column_qdrant_repository,

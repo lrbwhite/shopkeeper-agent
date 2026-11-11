@@ -8,6 +8,9 @@
 """
 
 import asyncio
+import time
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
@@ -19,6 +22,7 @@ from app.agent.nodes.extract_keywords import extract_keywords
 from app.agent.nodes.filter_metric import filter_metric
 from app.agent.nodes.filter_table import filter_table
 from app.agent.nodes.generate_sql import generate_sql
+from app.agent.nodes.handle_sql_failure import handle_sql_failure
 from app.agent.nodes.merge_retrieved_info import merge_retrieved_info
 from app.agent.nodes.recall_column import recall_column
 from app.agent.nodes.recall_metric import recall_metric
@@ -42,19 +46,76 @@ from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantReposit
 # StateGraph 声明整张图使用的状态结构和运行时上下文结构
 graph_builder = StateGraph(state_schema=DataAgentState, context_schema=DataAgentContext)
 
+# SQL 校验失败后允许修正的最大次数，超过后走失败出口而不是继续循环
+MAX_SQL_RETRY = 2
+
+
+def traced(name: str, node: Callable[[DataAgentState, Any], Awaitable[dict]]):
+    """给节点统一包一层计时和轨迹记录，避免逐个节点改代码"""
+
+    async def wrapper(state: DataAgentState, runtime):
+        started = time.perf_counter()
+        try:
+            result = await node(state, runtime)
+        except Exception as exc:
+            # 节点失败时也要留下轨迹，然后把异常继续抛给上层
+            latency_ms = round((time.perf_counter() - started) * 1000, 1)
+            runtime.stream_writer(
+                {
+                    "type": "trace",
+                    "node": name,
+                    "status": "error",
+                    "latency_ms": latency_ms,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
+            raise
+
+        latency_ms = round((time.perf_counter() - started) * 1000, 1)
+        # 实时事件给前端展示链路耗时，state 里的 trace 供报告和排查使用
+        runtime.stream_writer(
+            {
+                "type": "trace",
+                "node": name,
+                "status": "success",
+                "latency_ms": latency_ms,
+            }
+        )
+        return {
+            **(result or {}),
+            "trace": [
+                {
+                    "node": name,
+                    "status": "success",
+                    "latency_ms": latency_ms,
+                    "error": None,
+                }
+            ],
+        }
+
+    return wrapper
+
+
+def register(name: str, node: Callable[[DataAgentState, Any], Awaitable[dict]]):
+    """注册节点时自动套上轨迹装饰器"""
+
+    graph_builder.add_node(name, traced(name, node))
+
+
 # 注册节点：每个节点负责问数链路中的一个清晰步骤
-graph_builder.add_node("extract_keywords", extract_keywords)
-graph_builder.add_node("recall_column", recall_column)
-graph_builder.add_node("recall_value", recall_value)
-graph_builder.add_node("recall_metric", recall_metric)
-graph_builder.add_node("merge_retrieved_info", merge_retrieved_info)
-graph_builder.add_node("filter_metric", filter_metric)
-graph_builder.add_node("filter_table", filter_table)
-graph_builder.add_node("add_extra_context", add_extra_context)
-graph_builder.add_node("generate_sql", generate_sql)
-graph_builder.add_node("validate_sql", validate_sql)
-graph_builder.add_node("correct_sql", correct_sql)
-graph_builder.add_node("run_sql", run_sql)
+register("extract_keywords", extract_keywords)
+register("recall_column", recall_column)
+register("recall_value", recall_value)
+register("recall_metric", recall_metric)
+register("merge_retrieved_info", merge_retrieved_info)
+register("filter_metric", filter_metric)
+register("filter_table", filter_table)
+register("add_extra_context", add_extra_context)
+register("generate_sql", generate_sql)
+register("validate_sql", validate_sql)
+register("correct_sql", correct_sql)
+register("handle_sql_failure", handle_sql_failure)
+register("run_sql", run_sql)
 
 # 从用户问题开始，先抽取关键词作为后续检索的基础
 graph_builder.add_edge(START, "extract_keywords")
@@ -79,14 +140,31 @@ graph_builder.add_edge("filter_metric", "add_extra_context")
 graph_builder.add_edge("add_extra_context", "generate_sql")
 graph_builder.add_edge("generate_sql", "validate_sql")
 
-# SQL 校验通过就直接执行，校验失败则先进入修正节点
+
+# SQL 校验通过就直接执行；校验失败且还有修正次数就重试，否则进入失败出口
+def after_validate(state: DataAgentState) -> str:
+    """根据校验结果决定执行 修正 还是失败出口"""
+
+    if state.get("error") is None:
+        return "run_sql"
+    if state.get("retry_count", 0) < MAX_SQL_RETRY:
+        return "correct_sql"
+    return "handle_sql_failure"
+
+
 graph_builder.add_conditional_edges(
     source="validate_sql",
-    path=lambda state: "run_sql" if state["error"] is None else "correct_sql",
-    path_map={"run_sql": "run_sql", "correct_sql": "correct_sql"},
+    path=after_validate,
+    path_map={
+        "run_sql": "run_sql",
+        "correct_sql": "correct_sql",
+        "handle_sql_failure": "handle_sql_failure",
+    },
 )
-graph_builder.add_edge("correct_sql", "run_sql")
+# 修正后的 SQL 必须重新校验，否则重试上限没有意义
+graph_builder.add_edge("correct_sql", "validate_sql")
 graph_builder.add_edge("run_sql", END)
+graph_builder.add_edge("handle_sql_failure", END)
 
 # 编译后的 graph 是对外使用的 Agent 执行入口
 graph = graph_builder.compile()
@@ -123,7 +201,7 @@ if __name__ == "__main__":
             value_es_repository = ValueESRepository(es_client_manager.client)
 
             # 当前只需要传入原始问题，后续节点会逐步写回召回、过滤和额外上下文结果
-            state = DataAgentState(query="统计华北地区的销售总额")
+            state = DataAgentState(query="统计华北地区的销售总额", retry_count=0, trace=[])
             context = DataAgentContext(
                 column_qdrant_repository=column_qdrant_repository,
                 embedding_client=embedding_client_manager.client,

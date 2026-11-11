@@ -18,21 +18,20 @@ class QdrantClientManager:
     """管理 Qdrant 客户端的初始化与关闭"""
 
     def __init__(self, qdrant_config: QdrantConfig):
-        # 保存配置对象，后面初始化客户端时要从这里读取 host 和 port
+        # 保存配置对象，后面初始化客户端时要从这里读取集群 url 和 api key
         self.qdrant_config = qdrant_config
         # 先把 client 声明出来，真正初始化放到 init() 中进行
         self.client: Optional[AsyncQdrantClient] = None
-
-    def _get_url(self) -> str:
-        """拼接 Qdrant 服务地址"""
-        return f"http://{self.qdrant_config.host}:{self.qdrant_config.port}"
 
     def init(self):
         """
         显式初始化 Qdrant 客户端
         这里不在 __init__ 中直接初始化，是为了和项目的生命周期管理保持一致
+        云端 Qdrant Cloud 通过 url + api_key 接入
         """
-        self.client = AsyncQdrantClient(url=self._get_url())
+        self.client = AsyncQdrantClient(
+            url=self.qdrant_config.url, api_key=self.qdrant_config.api_key
+        )
 
     async def close(self):
         """关闭 Qdrant 客户端连接"""

@@ -30,7 +30,8 @@ class QdrantClientManager:
         云端 Qdrant Cloud 通过 url + api_key 接入
         """
         self.client = AsyncQdrantClient(
-            url=self.qdrant_config.url, api_key=self.qdrant_config.api_key
+            url=self.qdrant_config.url, api_key=self.qdrant_config.api_key,
+            timeout=20,
         )
 
     async def close(self):

@@ -12,6 +12,7 @@ from qdrant_client.models import Distance, PointIdsList, PointStruct, VectorPara
 
 from app.conf.app_config import app_config
 from app.entities.metric_info import MetricInfo
+from app.repositories.qdrant.retry import with_transport_retry
 
 
 class MetricQdrantRepository:
@@ -80,12 +81,15 @@ class MetricQdrantRepository:
         self, embedding: list[float], score_threshold: float = 0.6, limit: int = 20
     ) -> list[MetricInfo]:
         """按向量相似度检索指标元数据，并还原为 MetricInfo 实体"""
-
-        result = await self.client.query_points(
-            collection_name=self.collection_name,
-            query=embedding,
-            limit=limit,
-            score_threshold=score_threshold,
+        result = await with_transport_retry(
+            lambda: self.client.query_points(
+                collection_name=self.collection_name,
+                query=embedding,
+                limit=limit,
+                score_threshold=score_threshold,
+            ),
+            action="指标向量检索",
         )
-        # Qdrant point 的 payload 中保存的是指标元数据，业务层继续使用 MetricInfo
+        # Qdrant point 的 payload 中保存的是指标元数据，业务层继续使用 MetricInfo；
+        # 解析放在重试之外，避免把数据问题误当成网络问题重试
         return [MetricInfo(**point.payload) for point in result.points]

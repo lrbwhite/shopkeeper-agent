@@ -13,6 +13,7 @@ from qdrant_client.models import Distance, PointIdsList, VectorParams
 
 from app.conf.app_config import app_config
 from app.entities.column_info import ColumnInfo
+from app.repositories.qdrant.retry import with_transport_retry
 
 
 class ColumnQdrantRepository:
@@ -78,11 +79,15 @@ class ColumnQdrantRepository:
         self, embedding: list[float], score_threshold: float = 0.6, limit: int = 20
     ) -> list[ColumnInfo]:
         """按向量相似度检索字段元数据，并还原为 ColumnInfo 实体"""
-        result = await self.client.query_points(
-            collection_name=self.collection_name,
-            query=embedding,
-            limit=limit,
-            score_threshold=score_threshold,
+        result = await with_transport_retry(
+            lambda: self.client.query_points(
+                collection_name=self.collection_name,
+                query=embedding,
+                limit=limit,
+                score_threshold=score_threshold,
+            ),
+            action="字段向量检索",
         )
-        # Qdrant 只保存字段元数据 payload，业务层继续使用 ColumnInfo
+        # Qdrant 只保存字段元数据 payload，业务层继续使用 ColumnInfo；
+        # 解析放在重试之外，避免把数据问题误当成网络问题重试
         return [ColumnInfo(**point.payload) for point in result.points]

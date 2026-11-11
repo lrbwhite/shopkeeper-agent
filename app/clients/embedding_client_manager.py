@@ -33,6 +33,7 @@ class EmbeddingClientManager:
             base_url=self.config.base_url,
             api_key=self.config.api_key,
             check_embedding_ctx_length=False,
+            max_retries=3,
         )
 
 

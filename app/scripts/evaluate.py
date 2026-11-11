@@ -45,6 +45,7 @@ from app.clients.mysql_client_manager import (
     meta_mysql_client_manager,
 )
 from app.clients.qdrant_client_manager import qdrant_client_manager
+from app.conf.app_config import app_config
 from app.repositories.es.value_es_repository import ValueESRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
@@ -378,6 +379,9 @@ async def evaluate(args: argparse.Namespace) -> dict:
         "meta": {
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "git_commit": git_commit(),
+            # 记录本次评测使用的模型，换模型后新旧报告不会混在一起比较
+            "llm_model": app_config.llm.model_name,
+            "embedding_model": app_config.embedding.model,
             "dataset": str(args.questions),
             "mode": args.mode,
             "limit": args.limit,

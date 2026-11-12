@@ -308,15 +308,6 @@ uv run python -m app.scripts.evaluate --mode recall --limit 4
 
 本仓库不覆盖生产治理能力，例如登录与数据权限、多租户隔离、SQL 审计、监控告警与灰度发布。
 
-## 简历表述
-
-> 电商数仓问数 Agent（基于开源 LangGraph 项目二次开发）
->
-> - 基于 LangGraph 编排「关键词抽取 → 三路并行召回 → 上下文合并 → SQL 生成/校验/修正/执行」的固定 DAG 问数链路；新增 SQL 修正上限 2 次与失败降级节点，避免错误 SQL 无限重试或异常中断流式响应。
-> - 自建 20 题评测集与双通道评测脚本（节点级召回 + 端到端执行），覆盖召回覆盖率、执行成功率、P50/P95 延迟、LLM 调用数与 token；字段召回覆盖率 95.8% → 98.3%，指标/取值召回 100%。
-> - 将字段、指标、取值三路关键词扩展合并为单次结构化输出，单题 LLM 调用 6 → 4 次、token 下降约 15%，并消除三路语义不一致。
-> - 元数据构建改造为幂等可重入：Qdrant 使用 uuid5 稳定 ID + upsert，MySQL 使用 ON DUPLICATE KEY UPDATE，构建后对三类存储做差集对账，解决索引膨胀、主键冲突与残留脏数据。
-
 ## License
 
 MIT，见 [LICENSE](LICENSE)。原项目版权归 didilili 所有。

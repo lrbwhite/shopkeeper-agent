@@ -75,6 +75,10 @@ class DataAgentState(TypedDict):
 
     query: str  # 用户输入的查询
     keywords: list[str]  # 抽取的关键词
+    # 三路召回各自的扩展词表，由 suggest_keywords 单次结构化输出统一产出
+    column_keywords: list[str]  # 字段语义词
+    metric_keywords: list[str]  # 指标概念词
+    value_keywords: list[str]  # 字段取值候选词
     retrieved_column_infos: list[ColumnInfo]  # 检索到的字段信息
     retrieved_metric_infos: list[MetricInfo]  # 检索到的指标信息
     retrieved_value_infos: list[ValueInfo]  # 检索到的取值信息

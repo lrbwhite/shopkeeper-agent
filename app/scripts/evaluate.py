@@ -37,6 +37,7 @@ from app.agent.nodes.extract_keywords import extract_keywords
 from app.agent.nodes.recall_column import recall_column
 from app.agent.nodes.recall_metric import recall_metric
 from app.agent.nodes.recall_value import recall_value
+from app.agent.nodes.suggest_keywords import suggest_keywords
 from app.agent.state import DataAgentState
 from app.clients.embedding_client_manager import embedding_client_manager
 from app.clients.es_client_manager import es_client_manager
@@ -52,11 +53,11 @@ from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepositor
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 
-# 三条召回通道的评测配置：通道名 节点函数 state 字段 题目中的期望字段
+# 三条召回通道的评测配置：通道名 节点函数 state 字段 题目中的期望字段 该通道词表字段
 RECALL_CHANNELS = (
-    ("column", recall_column, "retrieved_column_infos", "expected_columns"),
-    ("metric", recall_metric, "retrieved_metric_infos", "expected_metrics"),
-    ("value", recall_value, "retrieved_value_infos", "expected_values"),
+    ("column", recall_column, "retrieved_column_infos", "expected_columns", "column_keywords"),
+    ("metric", recall_metric, "retrieved_metric_infos", "expected_metrics", "metric_keywords"),
+    ("value", recall_value, "retrieved_value_infos", "expected_values", "value_keywords"),
 )
 
 DEFAULT_QUESTIONS = Path("evaluation/questions.jsonl")
@@ -151,19 +152,22 @@ def contain_rate(text: str, tokens: list[str]) -> float | None:
 
 
 async def run_recall(question: EvalQuestion, context: DataAgentContext) -> dict:
-    """单独执行关键词抽取和三路召回，不触发 SQL 生成与执行"""
+    """单独执行关键词抽取、统一扩展和三路召回，不触发 SQL 生成与执行"""
 
     runtime = NodeRuntime(context, [])
     state = DataAgentState(query=question.query, retry_count=0, trace=[])
     state.update(await extract_keywords(state, runtime))
+    # 三路召回只读上游词表，评测链路必须显式补上扩展节点，否则拿不到检索词
+    state.update(await suggest_keywords(state, runtime))
 
     channel_results: dict[str, dict] = {}
-    for channel, node, state_key, expected_field in RECALL_CHANNELS:
+    for channel, node, state_key, expected_field, keyword_key in RECALL_CHANNELS:
         expected = getattr(question, expected_field)
         entry: dict[str, Any] = {
             "expected": len(expected),
             "predicted": 0,
             "coverage": None,
+            "keywords": len(state[keyword_key]),
             "error": None,
         }
         try:
@@ -226,7 +230,7 @@ def build_summary(records: list[dict]) -> dict:
 
     summary: dict[str, Any] = {"questions": len(records), "recall": {}, "e2e": {}}
 
-    for channel, _, _, _ in RECALL_CHANNELS:
+    for channel, _, _, _, _ in RECALL_CHANNELS:
         entries = [
             record["recall"][channel]
             for record in records
@@ -395,7 +399,7 @@ def print_summary(summary: dict) -> None:
     """把汇总指标按行打印，便于直接贴进改造记录"""
 
     print("\n=== 汇总指标 ===")
-    for channel, _, _, _ in RECALL_CHANNELS:
+    for channel, _, _, _, _ in RECALL_CHANNELS:
         print(
             f"{channel:>6} 覆盖率={summary['recall'][f'{channel}_coverage']}"
             f" 命中率={summary['recall'][f'{channel}_hit']}"

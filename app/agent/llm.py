@@ -19,8 +19,8 @@ llm = init_chat_model(
     temperature=0,
     # 连接抖动和限流属于外部服务的常态，交给 SDK 做指数退避重试
     max_retries=3,
-    # 单次请求超时，避免一次挂起的调用把整条链路阻塞住
-    request_timeout=60,
+    # 单次请求超时：推理模型的长思维链偶发超过 60 秒，放宽到 180 秒避免被误杀
+    request_timeout=180,
 )
 
 if __name__ == "__main__":

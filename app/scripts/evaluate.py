@@ -157,8 +157,13 @@ async def run_recall(question: EvalQuestion, context: DataAgentContext) -> dict:
     runtime = NodeRuntime(context, [])
     state = DataAgentState(query=question.query, retry_count=0, trace=[])
     state.update(await extract_keywords(state, runtime))
-    # 三路召回只读上游词表，评测链路必须显式补上扩展节点，否则拿不到检索词
-    state.update(await suggest_keywords(state, runtime))
+
+    # 扩展节点失败时三路召回都拿不到检索词，记录错误后跳过召回，避免单题失败中断整轮评测
+    suggest_error = None
+    try:
+        state.update(await suggest_keywords(state, runtime))
+    except Exception as exc:
+        suggest_error = f"{type(exc).__name__}: {exc}"
 
     channel_results: dict[str, dict] = {}
     for channel, node, state_key, expected_field, keyword_key in RECALL_CHANNELS:
@@ -167,17 +172,18 @@ async def run_recall(question: EvalQuestion, context: DataAgentContext) -> dict:
             "expected": len(expected),
             "predicted": 0,
             "coverage": None,
-            "keywords": len(state[keyword_key]),
-            "error": None,
+            "keywords": len(state.get(keyword_key, [])),
+            "error": suggest_error,
         }
-        try:
-            # 节点返回的是 state 增量，直接合并回同一个 state 即可继续后续通道
-            state.update(await node(state, runtime))
-            predicted = [entity.id for entity in state[state_key]]
-            entry["predicted"] = len(predicted)
-            entry["coverage"] = coverage(predicted, expected)
-        except Exception as exc:
-            entry["error"] = f"{type(exc).__name__}: {exc}"
+        if suggest_error is None:
+            try:
+                # 节点返回的是 state 增量，直接合并回同一个 state 即可继续后续通道
+                state.update(await node(state, runtime))
+                predicted = [entity.id for entity in state[state_key]]
+                entry["predicted"] = len(predicted)
+                entry["coverage"] = coverage(predicted, expected)
+            except Exception as exc:
+                entry["error"] = f"{type(exc).__name__}: {exc}"
         channel_results[channel] = entry
 
     return channel_results

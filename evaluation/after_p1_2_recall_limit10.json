@@ -1,0 +1,344 @@
+{
+  "meta": {
+    "generated_at": "2026-11-14T13:48:55",
+    "git_commit": "19ef68c",
+    "llm_model": "deepseek-v4-pro-0813",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "dataset": "evaluation\\questions.jsonl",
+    "mode": "recall",
+    "limit": 10
+  },
+  "summary": {
+    "questions": 10,
+    "recall": {
+      "column_coverage": 1.0,
+      "column_hit": 1,
+      "column_candidates": 7,
+      "column_errors": 0,
+      "column_avg_latency_ms": 2037.0,
+      "metric_coverage": 1.0,
+      "metric_hit": 1,
+      "metric_candidates": 1.1,
+      "metric_errors": 0,
+      "metric_avg_latency_ms": 1314.4,
+      "value_coverage": null,
+      "value_hit": null,
+      "value_candidates": 0.2,
+      "value_errors": 0,
+      "value_avg_latency_ms": 95.3
+    },
+    "e2e": {}
+  },
+  "questions": [
+    {
+      "id": "q001",
+      "query": "订单总金额是多少",
+      "type": "single_table",
+      "recall": {
+        "column": {
+          "expected": 1,
+          "predicted": 5,
+          "coverage": 1.0,
+          "keywords": 1,
+          "latency_ms": 2227.2,
+          "error": null
+        },
+        "metric": {
+          "expected": 1,
+          "predicted": 2,
+          "coverage": 1.0,
+          "keywords": 3,
+          "latency_ms": 1298.0,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 148.6,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q002",
+      "query": "一共卖出了多少件商品",
+      "type": "single_table",
+      "recall": {
+        "column": {
+          "expected": 1,
+          "predicted": 9,
+          "coverage": 1.0,
+          "keywords": 2,
+          "latency_ms": 1943.4,
+          "error": null
+        },
+        "metric": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 4,
+          "latency_ms": 1511.3,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 40.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q003",
+      "query": "订单总数有多少",
+      "type": "single_table",
+      "recall": {
+        "column": {
+          "expected": 1,
+          "predicted": 6,
+          "coverage": 1.0,
+          "keywords": 2,
+          "latency_ms": 1944.2,
+          "error": null
+        },
+        "metric": {
+          "expected": 0,
+          "predicted": 2,
+          "coverage": null,
+          "keywords": 4,
+          "latency_ms": 1291.4,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 39.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q004",
+      "query": "各会员等级的客户数量",
+      "type": "single_table",
+      "recall": {
+        "column": {
+          "expected": 2,
+          "predicted": 9,
+          "coverage": 1.0,
+          "keywords": 2,
+          "latency_ms": 2263.5,
+          "error": null
+        },
+        "metric": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 4,
+          "latency_ms": 1567.9,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 48.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q005",
+      "query": "统计华北地区的销售额",
+      "type": "multi_table",
+      "recall": {
+        "column": {
+          "expected": 2,
+          "predicted": 8,
+          "coverage": 1.0,
+          "keywords": 2,
+          "latency_ms": 2016.9,
+          "error": null
+        },
+        "metric": {
+          "expected": 1,
+          "predicted": 1,
+          "coverage": 1.0,
+          "keywords": 3,
+          "latency_ms": 960.3,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 1,
+          "coverage": null,
+          "keywords": 2,
+          "latency_ms": 454.3,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q006",
+      "query": "华东地区卖出了多少件商品",
+      "type": "multi_table",
+      "recall": {
+        "column": {
+          "expected": 2,
+          "predicted": 10,
+          "coverage": 1.0,
+          "keywords": 2,
+          "latency_ms": 1901.0,
+          "error": null
+        },
+        "metric": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 3,
+          "latency_ms": 1120.4,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 1,
+          "coverage": null,
+          "keywords": 2,
+          "latency_ms": 52.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q007",
+      "query": "每个品类的销售额",
+      "type": "multi_table",
+      "recall": {
+        "column": {
+          "expected": 2,
+          "predicted": 5,
+          "coverage": 1.0,
+          "keywords": 2,
+          "latency_ms": 2018.4,
+          "error": null
+        },
+        "metric": {
+          "expected": 0,
+          "predicted": 1,
+          "coverage": null,
+          "keywords": 4,
+          "latency_ms": 1791.5,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 53.7,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q008",
+      "query": "各省份的订单数量",
+      "type": "multi_table",
+      "recall": {
+        "column": {
+          "expected": 2,
+          "predicted": 9,
+          "coverage": 1.0,
+          "keywords": 3,
+          "latency_ms": 1731.6,
+          "error": null
+        },
+        "metric": {
+          "expected": 0,
+          "predicted": 2,
+          "coverage": null,
+          "keywords": 3,
+          "latency_ms": 1192.6,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 44.7,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q009",
+      "query": "GMV 是多少",
+      "type": "metric",
+      "recall": {
+        "column": {
+          "expected": 1,
+          "predicted": 4,
+          "coverage": 1.0,
+          "keywords": 1,
+          "latency_ms": 2178.1,
+          "error": null
+        },
+        "metric": {
+          "expected": 1,
+          "predicted": 1,
+          "coverage": 1.0,
+          "keywords": 3,
+          "latency_ms": 1108.8,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 22.8,
+          "error": null
+        }
+      }
+    },
+    {
+      "id": "q010",
+      "query": "平均订单金额是多少",
+      "type": "metric",
+      "recall": {
+        "column": {
+          "expected": 1,
+          "predicted": 5,
+          "coverage": 1.0,
+          "keywords": 2,
+          "latency_ms": 2145.9,
+          "error": null
+        },
+        "metric": {
+          "expected": 1,
+          "predicted": 2,
+          "coverage": 1.0,
+          "keywords": 3,
+          "latency_ms": 1302.0,
+          "error": null
+        },
+        "value": {
+          "expected": 0,
+          "predicted": 0,
+          "coverage": null,
+          "keywords": 0,
+          "latency_ms": 48.3,
+          "error": null
+        }
+      }
+    }
+  ]
+}

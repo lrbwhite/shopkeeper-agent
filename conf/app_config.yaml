@@ -44,3 +44,7 @@ llm:
   model_name: deepseek-v4-pro-0813
   api_key: ${oc.env:DASHSCOPE_API_KEY}
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+
+recall:
+  # 单次召回允许的最大并发检索数，避免把 Qdrant Cloud 连接池打满
+  max_concurrency: 8

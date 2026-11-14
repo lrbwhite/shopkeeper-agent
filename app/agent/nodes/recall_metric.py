@@ -22,23 +22,22 @@ async def recall_metric(state: DataAgentState, runtime: Runtime[DataAgentContext
     writer({"type": "progress", "step": step, "status": "running"})
 
     try:
-        # 指标召回词表由上游 suggest_keywords 统一产出，这里只和通用关键词合并
-        keywords = set(state["keywords"]) | set(state["metric_keywords"])
+        # 指标召回词表由上游 suggest_keywords 统一产出；排序保证多次运行结果顺序稳定
+        keywords = sorted(set(state["keywords"]) | set(state["metric_keywords"]))
         # 指标召回使用向量检索，需要 Embedding 客户端和指标 Qdrant 仓储配合
         embedding_client = runtime.context["embedding_client"]
         metric_qdrant_repository = runtime.context["metric_qdrant_repository"]
 
+        # 关键词一次性批量向量化，把 N 次串行 embedding 调用压缩成 1 次
+        embeddings = await embedding_client.aembed_documents(keywords)
+        # 仓储内部按配置的并发上限并行检索，返回顺序与关键词顺序一致
+        result_groups = await metric_qdrant_repository.search_many(embeddings)
+
         # 用指标 id 做唯一键，避免多个关键词命中同一个指标时重复写入 state
         metric_info_map: dict[str, MetricInfo] = {}
-        for keyword in keywords:
-            # 指标库是向量集合，查询词必须先 Embedding 成 query vector
-            embedding = await embedding_client.aembed_query(keyword)
-            current_metric_infos: list[
-                MetricInfo
-            ] = await metric_qdrant_repository.search(embedding)
+        for current_metric_infos in result_groups:
             for metric_info in current_metric_infos:
-                if metric_info.id not in metric_info_map:
-                    metric_info_map[metric_info.id] = metric_info
+                metric_info_map.setdefault(metric_info.id, metric_info)
 
         # 写回 state 的是业务实体列表，后续过滤节点不需要关心 Qdrant 原始 point 结构
         retrieved_metric_infos: list[MetricInfo] = list(metric_info_map.values())

@@ -22,23 +22,23 @@ async def recall_column(state: DataAgentState, runtime: Runtime[DataAgentContext
     writer({"type": "progress", "step": step, "status": "running"})
 
     try:
-        # 字段召回词表由上游 suggest_keywords 统一产出，这里只和通用关键词合并
-        keywords = set(state["keywords"]) | set(state["column_keywords"])
+        # 字段召回词表由上游 suggest_keywords 统一产出；排序保证多次运行结果顺序稳定
+        keywords = sorted(set(state["keywords"]) | set(state["column_keywords"]))
         # context 保存外部运行时工具：向量仓储和 Embedding 客户端
         column_qdrant_repository = runtime.context["column_qdrant_repository"]
         embedding_client = runtime.context["embedding_client"]
 
+        # 关键词一次性批量向量化，把 N 次串行 embedding 调用压缩成 1 次
+        embeddings = await embedding_client.aembed_documents(keywords)
+        # 仓储内部按配置的并发上限并行检索，返回顺序与关键词顺序一致
+        result_groups = await column_qdrant_repository.search_many(embeddings)
+
         # 用字段 id 做唯一键，因为多个关键词、同一字段的多个向量点都可能命中同一个字段
         column_info_map: dict[str, ColumnInfo] = {}
-        for keyword in keywords:
-            # 查询词必须先转成向量，才能和第 9 章写入 Qdrant 的字段向量做相似度检索
-            embedding = await embedding_client.aembed_query(keyword)
-            current_column_infos: list[
-                ColumnInfo
-            ] = await column_qdrant_repository.search(embedding)
+        for current_column_infos in result_groups:
             for column_info in current_column_infos:
-                if column_info.id not in column_info_map:
-                    column_info_map[column_info.id] = column_info
+                # setdefault 保留首个命中，结果顺序由关键词顺序决定
+                column_info_map.setdefault(column_info.id, column_info)
 
         # 写回 state 的是去重后的 ColumnInfo 列表，不暴露 Qdrant 原始 point 结构
         retrieved_column_infos: list[ColumnInfo] = list(column_info_map.values())

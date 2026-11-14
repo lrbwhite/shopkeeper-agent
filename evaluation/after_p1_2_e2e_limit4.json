@@ -1,0 +1,399 @@
+{
+  "meta": {
+    "generated_at": "2026-11-14T13:05:02",
+    "git_commit": "606ec25",
+    "llm_model": "deepseek-v4-pro-0813",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "dataset": "evaluation\\questions.jsonl",
+    "mode": "e2e",
+    "limit": 4
+  },
+  "summary": {
+    "questions": 4,
+    "recall": {
+      "column_coverage": null,
+      "column_hit": null,
+      "column_candidates": null,
+      "column_errors": 0,
+      "column_avg_latency_ms": null,
+      "metric_coverage": null,
+      "metric_hit": null,
+      "metric_candidates": null,
+      "metric_errors": 0,
+      "metric_avg_latency_ms": null,
+      "value_coverage": null,
+      "value_hit": null,
+      "value_candidates": null,
+      "value_errors": 0,
+      "value_avg_latency_ms": null
+    },
+    "e2e": {
+      "success_rate": 1,
+      "p50_latency_ms": 45051.2,
+      "p95_latency_ms": 57630.0,
+      "avg_llm_calls": 4,
+      "avg_total_tokens": 6190.8,
+      "avg_sql_keyword_coverage": 1.0,
+      "avg_table_hit_coverage": 1.0,
+      "failed_ids": []
+    }
+  },
+  "questions": [
+    {
+      "id": "q001",
+      "query": "订单总金额是多少",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 35166.2,
+        "success": true,
+        "error": null,
+        "llm_calls": 4,
+        "total_tokens": 5596,
+        "sql": "SELECT SUM(fact_order.order_amount) AS 订单总金额 FROM fact_order;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 490.6,
+            "error": null
+          },
+          {
+            "node": "suggest_keywords",
+            "status": "success",
+            "latency_ms": 17208.2,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 2454.1,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 2702.4,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 40.1,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 170.6,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 3876.6,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 5103.0,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 14.7,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 9420.1,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 16.7,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 9.1,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q002",
+      "query": "一共卖出了多少件商品",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 57630.0,
+        "success": true,
+        "error": null,
+        "llm_calls": 4,
+        "total_tokens": 6939,
+        "sql": "SELECT SUM(order_quantity) AS 总销售件数 FROM fact_order;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          },
+          {
+            "node": "suggest_keywords",
+            "status": "success",
+            "latency_ms": 39964.9,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 5574.0,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 2269.3,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 38.6,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 9.6,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 3372.3,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 5568.6,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 6.6,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 6478.1,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 1.7,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 9.8,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q003",
+      "query": "订单总数有多少",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 36653.1,
+        "success": true,
+        "error": null,
+        "llm_calls": 4,
+        "total_tokens": 6061,
+        "sql": "SELECT COUNT(*) AS 订单总数 FROM fact_order",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.4,
+            "error": null
+          },
+          {
+            "node": "suggest_keywords",
+            "status": "success",
+            "latency_ms": 21735.3,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 2628.0,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 2443.2,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 27.6,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 8.0,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 6941.4,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 5580.9,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 1.4,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 5306.7,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 8.5,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 4.6,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    },
+    {
+      "id": "q004",
+      "query": "各会员等级的客户数量",
+      "type": "single_table",
+      "e2e": {
+        "latency_ms": 45051.2,
+        "success": true,
+        "error": null,
+        "llm_calls": 4,
+        "total_tokens": 6167,
+        "sql": "SELECT member_level AS 会员等级, COUNT(*) AS 客户数量\nFROM dim_customer\nGROUP BY member_level;",
+        "trace": [
+          {
+            "node": "extract_keywords",
+            "status": "success",
+            "latency_ms": 0.3,
+            "error": null
+          },
+          {
+            "node": "suggest_keywords",
+            "status": "success",
+            "latency_ms": 26855.9,
+            "error": null
+          },
+          {
+            "node": "recall_column",
+            "status": "success",
+            "latency_ms": 2936.0,
+            "error": null
+          },
+          {
+            "node": "recall_metric",
+            "status": "success",
+            "latency_ms": 2895.2,
+            "error": null
+          },
+          {
+            "node": "recall_value",
+            "status": "success",
+            "latency_ms": 36.4,
+            "error": null
+          },
+          {
+            "node": "merge_retrieved_info",
+            "status": "success",
+            "latency_ms": 4.8,
+            "error": null
+          },
+          {
+            "node": "filter_metric",
+            "status": "success",
+            "latency_ms": 3549.7,
+            "error": null
+          },
+          {
+            "node": "filter_table",
+            "status": "success",
+            "latency_ms": 5252.0,
+            "error": null
+          },
+          {
+            "node": "add_extra_context",
+            "status": "success",
+            "latency_ms": 1.7,
+            "error": null
+          },
+          {
+            "node": "generate_sql",
+            "status": "success",
+            "latency_ms": 9964.9,
+            "error": null
+          },
+          {
+            "node": "validate_sql",
+            "status": "success",
+            "latency_ms": 11.1,
+            "error": null
+          },
+          {
+            "node": "run_sql",
+            "status": "success",
+            "latency_ms": 10.7,
+            "error": null
+          }
+        ],
+        "sql_keyword_coverage": 1.0,
+        "table_hit_coverage": 1.0
+      }
+    }
+  ]
+}

@@ -7,6 +7,8 @@ Service 层负责决定一个字段要拆成哪些 point
 Repository 只关心集合存在和向量点如何稳定落库
 """
 
+import asyncio
+
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.models import PointStruct
 from qdrant_client.models import Distance, PointIdsList, VectorParams
@@ -91,3 +93,19 @@ class ColumnQdrantRepository:
         # Qdrant 只保存字段元数据 payload，业务层继续使用 ColumnInfo；
         # 解析放在重试之外，避免把数据问题误当成网络问题重试
         return [ColumnInfo(**point.payload) for point in result.points]
+
+    async def search_many(
+        self,
+        embeddings: list[list[float]],
+        score_threshold: float = 0.6,
+        limit: int = 20,
+    ) -> list[list[ColumnInfo]]:
+        """按并发上限批量检索，返回顺序与传入向量顺序一致"""
+        semaphore = asyncio.Semaphore(app_config.recall.max_concurrency)
+
+        async def search_one(embedding: list[float]) -> list[ColumnInfo]:
+            # 并发数由配置控制，避免一次召回把 Qdrant Cloud 连接池打满
+            async with semaphore:
+                return await self.search(embedding, score_threshold, limit)
+
+        return await asyncio.gather(*(search_one(embedding) for embedding in embeddings))

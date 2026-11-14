@@ -22,8 +22,8 @@ async def recall_value(state: DataAgentState, runtime: Runtime[DataAgentContext]
     writer({"type": "progress", "step": step, "status": "running"})
 
     try:
-        # 字段取值词表由上游 suggest_keywords 统一产出，这里只和通用关键词合并
-        keywords = set(state["keywords"]) | set(state["value_keywords"])
+        # 字段取值词表由上游 suggest_keywords 统一产出；排序保证多次运行结果顺序稳定
+        keywords = sorted(set(state["keywords"]) | set(state["value_keywords"]))
         # 字段取值更关注真实文本命中，因此这里走 Elasticsearch，而不是向量检索
         value_es_repository = runtime.context["value_es_repository"]
 

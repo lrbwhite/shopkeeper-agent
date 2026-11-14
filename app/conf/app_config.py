@@ -88,6 +88,14 @@ class LLMConfig:
 
 
 @dataclass
+class RecallConfig:
+    """召回检索配置"""
+
+    # 单次召回允许的最大并发检索数
+    max_concurrency: int
+
+
+@dataclass
 class AppConfig:
     """项目级总配置入口"""
 
@@ -98,6 +106,7 @@ class AppConfig:
     embedding: EmbeddingConfig
     es: ESConfig
     llm: LLMConfig
+    recall: RecallConfig
 
 
 # 从当前文件位置回到项目根目录，再定位到 conf/app_config.yaml

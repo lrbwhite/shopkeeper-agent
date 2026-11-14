@@ -173,9 +173,11 @@ async def run_recall(question: EvalQuestion, context: DataAgentContext) -> dict:
             "predicted": 0,
             "coverage": None,
             "keywords": len(state.get(keyword_key, [])),
+            "latency_ms": None,
             "error": suggest_error,
         }
         if suggest_error is None:
+            started = time.perf_counter()
             try:
                 # 节点返回的是 state 增量，直接合并回同一个 state 即可继续后续通道
                 state.update(await node(state, runtime))
@@ -184,6 +186,9 @@ async def run_recall(question: EvalQuestion, context: DataAgentContext) -> dict:
                 entry["coverage"] = coverage(predicted, expected)
             except Exception as exc:
                 entry["error"] = f"{type(exc).__name__}: {exc}"
+            finally:
+                # 记录节点耗时，用于评估召回批量化与并发化的收益
+                entry["latency_ms"] = round((time.perf_counter() - started) * 1000, 1)
         channel_results[channel] = entry
 
     return channel_results
@@ -261,6 +266,14 @@ def build_summary(records: list[dict]) -> dict:
         )
         summary["recall"][f"{channel}_errors"] = sum(
             1 for entry in entries if entry["error"]
+        )
+        latencies = [
+            entry["latency_ms"]
+            for entry in entries
+            if entry.get("latency_ms") is not None
+        ]
+        summary["recall"][f"{channel}_avg_latency_ms"] = (
+            round(mean(latencies), 1) if latencies else None
         )
 
     e2e_records = [record["e2e"] for record in records if record.get("e2e")]
@@ -411,6 +424,7 @@ def print_summary(summary: dict) -> None:
             f" 命中率={summary['recall'][f'{channel}_hit']}"
             f" 候选数={summary['recall'][f'{channel}_candidates']}"
             f" 错误数={summary['recall'][f'{channel}_errors']}"
+            f" 耗时={summary['recall'][f'{channel}_avg_latency_ms']}ms"
         )
     if summary["e2e"]:
         for key, value in summary["e2e"].items():

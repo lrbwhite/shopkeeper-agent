@@ -7,6 +7,8 @@
 所以指标单独使用 metric_info_collection，避免后续召回时和字段结果混在一起
 """
 
+import asyncio
+
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, PointIdsList, PointStruct, VectorParams
 
@@ -93,3 +95,19 @@ class MetricQdrantRepository:
         # Qdrant point 的 payload 中保存的是指标元数据，业务层继续使用 MetricInfo；
         # 解析放在重试之外，避免把数据问题误当成网络问题重试
         return [MetricInfo(**point.payload) for point in result.points]
+
+    async def search_many(
+        self,
+        embeddings: list[list[float]],
+        score_threshold: float = 0.6,
+        limit: int = 20,
+    ) -> list[list[MetricInfo]]:
+        """按并发上限批量检索，返回顺序与传入向量顺序一致"""
+        semaphore = asyncio.Semaphore(app_config.recall.max_concurrency)
+
+        async def search_one(embedding: list[float]) -> list[MetricInfo]:
+            # 并发数由配置控制，避免一次召回把 Qdrant Cloud 连接池打满
+            async with semaphore:
+                return await self.search(embedding, score_threshold, limit)
+
+        return await asyncio.gather(*(search_one(embedding) for embedding in embeddings))

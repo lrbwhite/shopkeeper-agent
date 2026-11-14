@@ -42,8 +42,9 @@ es:
 
 llm:
   model_name: deepseek-v4-pro-0813
-  api_key: ${oc.env:DASHSCOPE_API_KEY}
-  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  # 密钥与服务地址统一从 .env 读取，切换模型网关时只改 .env
+  api_key: ${oc.env:LLM_API_KEY}
+  base_url: ${oc.env:LLM_BASE_URL}
 
 recall:
   # 单次召回允许的最大并发检索数，避免把 Qdrant Cloud 连接池打满
